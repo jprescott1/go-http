@@ -1,24 +1,27 @@
-name: Go CI
+name: Build App 
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - 'v*.*.*' # Trigger on new tags (e.g., v1.0.0)
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version-file: 'go.mod'
-
+        go-version: '1.24'
+    - name: Get version from tag
+      if: github.ref_type == 'tag'
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
     - name: Build
-      run: go build -v ./...
-
-    - name: Test
-      run: go test -v ./...
+      run: go build -ldflags "-s -w" -o my-app${{ env.VERSION && format('-{0}', env.VERSION) }} ./...
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: go-http${{ env.VERSION && format('-{0}', env.VERSION) }}
+        path: go-http*
