@@ -1,17 +1,12 @@
 package main
 
 import (
-	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 )
 
 func main() {
-
-	var (
-		buf    bytes.Buffer
-		logger = log.New(&buf, "logger: ", log.Lshortfile)
-	)
 
 	mux := http.ServeMux{}
 	s := http.Server{
@@ -25,6 +20,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger.Print("HTTP server started")
+	fmt.Println("HTTP server started")
 
 }
