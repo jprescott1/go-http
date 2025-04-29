@@ -1,4 +1,4 @@
-name: Build App 
+name: Build App
 
 on:
   push:
@@ -10,26 +10,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
 
-    - name: Get version from tag
-      if: github.ref_type == 'tag'
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Get version from tag
+        if: github.ref_type == 'tag'
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-    - name: Build
-      run: |
-        go build -o go-http main.go
-        ls -l go-http
+      - name: Build
+        run: |
+          go build -o go-http-${VERSION} main.go
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: go-http${{ env.VERSION && format('-{0}', env.VERSION) }}
-        path: go-http
-        compression-level: 0
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-http-${{ env.VERSION }}
+          path: go-http-${{ env.VERSION }}
+          compression-level: 0
