@@ -32,3 +32,4 @@ jobs:
       with:
         name: go-http${{ env.VERSION && format('-{0}', env.VERSION) }}
         path: go-http
+        compression-level: 0
