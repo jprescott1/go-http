@@ -5,9 +5,9 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  packages: write
+# permissions:
+#   contents: write
+#   packages: write
 
 jobs:
   release:
