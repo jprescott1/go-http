@@ -1,34 +1,70 @@
-name: Build App
+name: Release and Publish Docker Image
 
 on:
   push:
-    tags:
-      - 'v*.*.*' # Trigger on new tags (e.g., v1.0.0)
-  workflow_dispatch:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          fetch-depth: 0  # Needed to fetch all tags
 
-      - name: Get version from tag
-        if: github.ref_type == 'tag'
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
-      - name: Build
+      - name: Set up Git
         run: |
-          go build -o go-http-${VERSION} main.go
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: Get latest tag and bump patch version
+        id: versioning
+        run: |
+          latest=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+          echo "Latest tag: $latest"
+
+          if [ -z "$latest" ]; then
+            new_version="v0.0.1"
+          else
+            IFS='.' read -r major minor patch <<<"${latest#v}"
+            new_version="v$major.$minor.$((patch + 1))"
+          fi
+
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Create Git tag
+        run: |
+          git tag ${{ env.NEW_VERSION }}
+          git push origin ${{ env.NEW_VERSION }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
         with:
-          name: go-http-${{ env.VERSION }}
-          path: go-http-${{ env.VERSION }}
-          compression-level: 0
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push versioned Docker image
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }} .
+          docker push ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }}
+
+      - name: Tag and push "latest"
+        run: |
+          docker tag ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }} ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }}:latest
+
+      - name: Create GitHub Release called "latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.NEW_VERSION }}
+          name: latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
