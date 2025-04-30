@@ -20,6 +20,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("HTTP server started")
+	fmt.Println("HTTP server started...")
 
 }
