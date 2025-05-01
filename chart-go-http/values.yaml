@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/jprescott1/go-http
+  tag: latest
+  pullSecret: ghcr-credentials
+
+containerPort: 8080
+
+service:
+  type: LoadBalancer
+  port: 80
